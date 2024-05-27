@@ -1,0 +1,3 @@
+[submodule "openmixup"]
+	path = openmixup
+	url = https://github.com/Westlake-AI/openmixup.git

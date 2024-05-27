@@ -1,0 +1,42 @@
+name: mssl
+channels:
+  - https://aws-ml-conda.s3.us-west-2.amazonaws.com
+  - nvidia
+  - conda-forge
+  - pytorch
+channel-priority: strict
+dependencies:
+  # fundamentals
+  - pip
+  - numpy
+  - scipy
+  - pandas
+    # visualization
+  - matplotlib
+  - seaborn
+  - plotly
+    # nice-to-haves
+  - tqdm
+  - easydict
+  - notebook
+  # aws torch reqs
+  - cuda-cudart=12.1.105=0
+  - cuda-cupti=12.1.105=0
+  - cuda-libraries=12.1.0=0
+  - cuda-nvrtc=12.1.105=0
+  - cuda-nvtx=12.1.105=0
+  - cuda-opencl=12.4.127=0
+  - cuda-runtime=12.1.0=0
+  - pytorch=2.2.0=aws_py3.10_cuda12.1_cudnn8.9.2_0
+  - pytorch-cuda=12.1=ha16c6d3_5
+  - torchvision=0.17.0=py310_cu121
+  # imagenet-x installs
+  - datasets
+  - huggingface_hub
+  - pillow
+  # a2mim installs
+  - openmim
+  - pip:
+    - imagenet-x
+    - tensorboardX
+    - openmixup
