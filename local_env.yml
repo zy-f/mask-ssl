@@ -1,0 +1,32 @@
+name: mssl
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  # fundamentals
+  - pip
+  - numpy
+  - scipy
+  - pandas
+    # visualization
+  - matplotlib
+  - seaborn
+  - plotly
+    # nice-to-haves
+  - tqdm
+  - easydict
+  - notebook
+  # local torch reqs
+  - pytorch::pytorch=2.2.0
+  - pytorch::torchvision=0.17.0
+  # imagenet-x installs
+  - datasets
+  - huggingface_hub
+  - pillow
+  # a2mim installs
+  - openmim
+  - pip:
+    - imagenet-x
+    - tensorboardX
+    - openmixup
