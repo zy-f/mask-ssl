@@ -1,8 +1,9 @@
 import torch
-import torch.nn as nn
-from types import MethodType
-
+from torch.utils.data import DataLoader
+from easydict import EasyDict
+from tqdm import tqdm
 from consts import WEIGHT_DIR
+import systems.a2mim_utils as a2u
 
 WEIGHTS = {
     'resnet50': f"{WEIGHT_DIR}/a2mim_r50_l3_sz224_init_8xb256_cos_ep300_ft_rsb_a2.pth"
@@ -16,97 +17,75 @@ def load_weights(model, weight_name='resnet50'):
         sd = {k[k.find('.')+1:] : v for k,v in raw_ckpt['state_dict'].items()}
         model.load_state_dict(sd)
 
-class ResNetMIMMask(nn.Module):
-    def __init__(self,
-                 mask_mode='learnable',
-                 mask_init=0,
-                 replace=True,
-                 detach=False,
-                 mask_dims=1024):
-        super().__init__()
-        self.mask_mode = mask_mode
-        self.replace = replace
-        self.detach = detach
-        assert self.mask_mode in [None, 'randn', 'zero', 'mean', 'instance_mean', 'learnable',]
-        self.mask_dims = mask_dims
-        if self.mask_mode not in [None, 'instance_mean',]:
-            self.mask_token = nn.Parameter(torch.zeros(1, self.mask_dims, 1, 1))
-        if mask_init > 0 and not replace:
-            self.mask_gamma = nn.Parameter(
-                mask_init * torch.ones((1, self.mask_dims, 1, 1)), requires_grad=True)
-        else:
-            self.mask_gamma = None
-    
-    def forward(self, x, mask=None):
-        """ perform MIM with mask and mask_token """
-        B, _, H, W = x.size()
-        if self.mask_mode is None:
-            return x
-        elif self.mask_mode == 'instance_mean':
-            mask_token = x.mean(dim=[2, 3], keepdim=True).expand(B, -1, H, W)
-        else:
-            if self.mask_mode == 'mean':
-                self.mask_token.data = x.mean(dim=[0, 2, 3], keepdim=True)
-            mask_token = self.mask_token.expand(B, -1, H, W)
-        assert mask is not None
-        mask = mask.view(B, 1, H, W).type_as(mask_token)
-        if self.replace:
-            x = x * (1. - mask) + mask_token * mask
-        else:
-            if self.detach:
-                x = x * (1. - mask) + x.clone().detach() * mask
-            if self.mask_gamma is not None:
-                x = x * (1. - mask) + (x * mask) * self.mask_gamma
-            x = x + mask_token * mask  # residual
-        return x
-
-def get_resnet_layer_input_dim(net, layer_id):
-    layer = getattr(net, f'layer{layer_id}')
-    inp_block = layer[0]
-    return inp_block.conv1.in_channels
-
-def inject_mask(net, mask_cfg, layer=4):
-    mask_dims = get_resnet_layer_input_dim(net, layer)
-    # add mask module to the resnet
-    net.add_module('mim_mask', ResNetMIMMask(mask_dims=mask_dims, **mask_cfg))
-    # define forward function with masking operation added at the correct layer
-    def modified_forward(self, x, mask=None):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-
-        for i in range(1,5):
-            if i == layer and self.training: # disable masking in eval mode
-                self.mim_mask(x)
-            x = getattr(self, f'layer{i}')(x)
-        return x
-    # inject the masked forward into the resnet
-    net.forward = MethodType(modified_forward, net)
-    return net
-
 class A2MIMSystem:
     """
     - cfg: easydict
+        - exp_name: str
         - mask_cfg: nested dict
             - mask_mode: str
             - mask_init: float
             - replace: bool
             - detach: bool
+        - mask_gen_cfg: nested dict
         - mask_layer: int (1 to 4)
         - hparams: nested dict
             - n_epochs: int
             - lr: float
             - wd: float
+        - dl_kwargs: nested dict of args for dataloader
+        - opt_kwargs: nested dict of optimizer args (learning rate, etc.)
     - model: unmodified resnet model
     - trn_dset, val_dset are pytorch datasts
-    - OptimClass: class of optimizer to use (e.g. torch.optim.AdamW)
+    - Optimizer: class of optimizer to use (e.g. torch.optim.AdamW)
     """
-    def __init__(self, cfg, model, trn_dset, val_dset=None, \
-                 device='cpu'):
-        self.model = inject_mask(model, cfg.mask_cfg, layer=cfg.mask_layer)
-        self.trn_dset = trn_dset
-        self.val_dset = val_dset
+    def __init__(self, cfg, model, trn_dset, val_dset=None, device='cpu'):
+        backbone = a2u.inject_mask(model, cfg.mask_cfg, layer=cfg.mask_layer)
+        self.full_model = a2u.A2MIMModel(backbone).to(device)
+        self.trn_dset = a2u.MaskedDataset(trn_dset, mask_gen_cfg=cfg.mask_gen_cfg, mask_layer=cfg.mask_layer)
+        self.val_dset = a2u.MaskedDataset(val_dset, mask_gen_cfg=cfg.mask_gen_cfg, mask_layer=cfg.mask_layer)
+        self.optimizer = a2u.prepare_optimizer(self.full_model, hparams=cfg.hparams)
+        self.loss_func = a2u.A2MIMLoss()
+        self.cfg = cfg
+        self.device = device
 
     def train_step(self, batch):
-        pass
+        img = batch.x.to(self.device)
+        mask = batch.mask.to(self.device)
+        img_rec = self.full_model(img, mask=mask)
+        loss = self.loss_func(img, img_rec, mask)
+        loss.backward()
+        self.optimizer.step()
+        return loss.item()
+    
+    def val_step(self, batch):
+        with torch.no_grad():
+            img = batch.x.to(self.device)
+            mask = batch.mask.to(self.device)
+            img_rec = self.full_model(img, mask=mask)
+            loss = self.loss_func(img, img_rec, mask)
+        return loss.item()
+
+    def save_model(self):
+        torch.save(self.full_model.backbone.state_dict(), f'{WEIGHT_DIR}/{self.cfg.exp_name}-best.pth')
+    
+    def run_training(self):
+        trn_dl = DataLoader(self.trn_dset, **self.cfg.dl_kwargs, shuffle=True)
+        val_dl = DataLoader(self.trn_dset, **self.cfg.dl_kwargs)
+        log_out = EasyDict()
+        log_out.best_loss = float('inf')
+        n_epochs = self.cfg.hparams.n_epochs
+        for epoch in range(n_epochs):
+            print(f'EPOCH {epoch+1}/{n_epochs}')
+            log_out.trn_loss = 0
+            log_out.val_loss = 0
+            for batch in tqdm(trn_dl, desc='trn', leave=True):
+                log_out.trn_loss += self.train_step(batch)
+            log_out.trn_loss /= len(self.trn_dset)
+            for batch in tqdm(val_dl, desc='val'):
+                log_out.val_loss += self.val_step(batch)
+            log_out.val_loss /= len(self.val_dset)
+
+            if log_out.val_loss < log_out.best_loss:
+                log_out.best_loss = log_out.val_loss
+                self.save_model()
+            print(f'trn_loss={log_out.trn_loss}, val_loss={log_out.val_loss}')
