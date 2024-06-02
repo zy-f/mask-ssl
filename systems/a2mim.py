@@ -12,13 +12,15 @@ WEIGHTS = {
     'resnet50': f"{WEIGHT_DIR}/a2mim_r50_l3_sz224_init_8xb256_cos_ep300_ft_rsb_a2.pth"
 }
 
-def load_weights(model, weight_name='resnet50'):
+def load_weights(model, weight_name='resnet50', delete_keys=[]):
     if weight_name not in WEIGHTS.keys():
         raise ValueError(f'invalid weight name {weight_name}')
     elif weight_name == 'resnet50':
         raw_ckpt = torch.load(WEIGHTS[weight_name])
         sd = {k[k.find('.')+1:] : v for k,v in raw_ckpt['state_dict'].items()}
-        model.load_state_dict(sd)
+        for dk in delete_keys:
+            del sd[dk]
+        print(model.load_state_dict(sd, strict=False))
 
 class A2MIMSystem:
     """
@@ -64,6 +66,7 @@ class A2MIMSystem:
         self.log_outputs = LogOutput(inputs, metrics, eval_metric_idx=1)
 
     def train_step(self, batch):
+        self.optimizer.zero_grad()
         img_raw = batch.x.to(self.device)
         img_mask = batch.x_mask.to(self.device)
         mask = batch.mask.to(self.device)

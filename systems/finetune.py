@@ -11,6 +11,19 @@ from utils import ScalarMetric, LogOutput, LogInput, EpochLogger
 class GenericFinetuneSystem:
     def __init__(self, cfg, model, trn_dset, val_dset, tst_dset, device='cpu'):
         self.model = model
+        train_params = []
+        if cfg.get('tune_layers'):
+            for name, param in model.named_parameters():
+                main_layer = name[:name.find('.')]
+                if main_layer in cfg.tune_layers:
+                    print(f'adding {name} to trainable params')
+                    param.requires_grad = True
+                    train_params.append(param)
+                else:
+                    param.requires_grad = False
+        else:
+            train_params = model.parameters()
+                
         model.to(device)
         self.trn_dset = trn_dset
         self.val_dset = val_dset
@@ -18,7 +31,7 @@ class GenericFinetuneSystem:
         self.device = device
         self.cfg = cfg
         self.loss_func = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.AdamW(model.parameters(), 
+        self.optimizer = torch.optim.AdamW(train_params, 
                                            lr=cfg.hparams.lr,
                                            weight_decay=cfg.hparams.wd)
         ## logging
@@ -42,6 +55,7 @@ class GenericFinetuneSystem:
         self.log_outputs = LogOutput(inputs, metrics, eval_metric_idx=2)
     
     def train_step(self, batch):
+        self.optimizer.zero_grad()
         x = batch.x.to(self.device)
         y = batch.y.to(self.device)
         y_pred = self.model(x)
