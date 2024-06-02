@@ -1,9 +1,11 @@
 import torch
+import numpy as np
 from torch.utils.data import DataLoader
 from easydict import EasyDict
 from tqdm import tqdm
 import sys
 from consts import WEIGHT_DIR
+from utils import ScalarMetric, LogOutput, LogInput, EpochLogger
 import systems.a2mim_utils as a2u
 
 WEIGHTS = {
@@ -39,32 +41,46 @@ class A2MIMSystem:
     - trn_dset, val_dset are pytorch datasts
     - Optimizer: class of optimizer to use (e.g. torch.optim.AdamW)
     """
-    def __init__(self, cfg, model, trn_dset, val_dset=None, device='cpu'):
+    def __init__(self, cfg, model, trn_dset, val_dset, device='cpu'):
         backbone = a2u.inject_mask(model, cfg.mask_cfg, layer=cfg.mask_layer)
         self.full_model = a2u.A2MIMModel(backbone).to(device)
         self.trn_dset = a2u.MaskedDataset(trn_dset, mask_gen_cfg=cfg.mask_gen_cfg, mask_layer=cfg.mask_layer)
         self.val_dset = a2u.MaskedDataset(val_dset, mask_gen_cfg=cfg.mask_gen_cfg, mask_layer=cfg.mask_layer)
-        self.optimizer = a2u.prepare_optimizer(self.full_model, hparams=cfg.hparams)
         self.loss_func = a2u.A2MIMLoss()
+        self.optimizer = a2u.prepare_optimizer(self.full_model, hparams=cfg.hparams)
         self.cfg = cfg
         self.device = device
+        # logging
+        inputs = [
+            LogInput('trn_loss', agg_func=np.mean),
+            LogInput('val_loss', agg_func=np.mean),
+        ]
+        self.epoch_logger = EpochLogger(inputs)
+        dummy = lambda x: x
+        metrics = [
+            ScalarMetric('trn loss', input_names=['trn_loss'], compute_func=dummy),
+            ScalarMetric('val loss', input_names=['val_loss'], compute_func=dummy)
+        ]
+        self.log_outputs = LogOutput(inputs, metrics, eval_metric_idx=1)
 
     def train_step(self, batch):
-        img = batch.x.to(self.device)
+        img_raw = batch.x.to(self.device)
+        img_mask = batch.x_mask.to(self.device)
         mask = batch.mask.to(self.device)
-        img_rec = self.full_model(img, mask=mask)
-        loss = self.loss_func(img, img_rec, mask)
+        img_rec = self.full_model(img_mask, mask=mask)
+        loss = self.loss_func(img_raw, img_rec, mask)
         loss.backward()
         self.optimizer.step()
-        return loss.item()
+        return EasyDict(trn_loss=loss.item())
     
     def val_step(self, batch):
         with torch.no_grad():
-            img = batch.x.to(self.device)
+            img_raw = batch.x.to(self.device)
+            img_mask = batch.x_mask.to(self.device)
             mask = batch.mask.to(self.device)
-            img_rec = self.full_model(img, mask=mask)
-            loss = self.loss_func(img, img_rec, mask)
-        return loss.item()
+            img_rec = self.full_model(img_mask, mask=mask)
+            loss = self.loss_func(img_raw, img_rec, mask)
+        return EasyDict(val_loss=loss.item())
 
     def save_model(self):
         torch.save(self.full_model.backbone.state_dict(), f'{WEIGHT_DIR}/{self.cfg.exp_name}-best.pth')
@@ -72,21 +88,20 @@ class A2MIMSystem:
     def run_training(self):
         trn_dl = DataLoader(self.trn_dset, **self.cfg.dl_kwargs, shuffle=True)
         val_dl = DataLoader(self.val_dset, **self.cfg.dl_kwargs)
-        log_out = EasyDict()
-        log_out.best_loss = float('inf')
+        self.epoch_logger.flush()
         n_epochs = self.cfg.hparams.n_epochs
         for epoch in range(n_epochs):
             print(f'EPOCH {epoch+1}/{n_epochs}')
-            log_out.trn_loss = 0
-            log_out.val_loss = 0
             for batch in tqdm(trn_dl, desc='trn', leave=True):
-                log_out.trn_loss += self.train_step(batch)
-            log_out.trn_loss /= len(self.trn_dset)
+                batch_out = self.train_step(batch)
+                self.epoch_logger.add_batch(batch_out)
             for batch in tqdm(val_dl, desc='val', leave=True):
-                log_out.val_loss += self.val_step(batch)
-            log_out.val_loss /= len(self.val_dset)
-
-            if log_out.val_loss < log_out.best_loss:
-                log_out.best_loss = log_out.val_loss
+                batch_out = self.val_step(batch)
+                self.epoch_logger.add_batch(batch_out)
+            epoch_data = self.epoch_logger.flush()
+            new_best = self.log_outputs.update(epoch_data)
+            if new_best:
+                print('new best achieved, saving')
                 self.save_model()
-            print(f'trn_loss={log_out.trn_loss}, val_loss={log_out.val_loss}')
+            print(self.log_outputs.report())
+        self.log_outputs.write_out(savename=self.cfg.exp_name)

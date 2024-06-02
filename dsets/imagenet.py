@@ -19,6 +19,15 @@ DEFAULT_TRANSFORM = tvt.Compose([
     imagenet_normalize
 ])
 
+TRAIN_TRANSFORM = tvt.Compose([
+    tvt.Resize(256),
+    tvt.CenterCrop(RESNET_INP_DIM),
+    tvt.ToTensor(),
+    imagenet_normalize, 
+    tvt.RandomResizedCrop(RESNET_INP_DIM, scale=(0.67, 1.0), ratio=(3/4, 4/3)),
+    tvt.RandomHorizontalFlip()
+])
+
 class ImageNet(Dataset):
     def __init__(self, split, transform=DEFAULT_TRANSFORM, subset_classes=None):
         hf_split = {

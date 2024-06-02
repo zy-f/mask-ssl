@@ -151,7 +151,7 @@ class MaskedDataset(Dataset):
     def __getitem__(self, i):
         out = self.base_dataset[i]
         if self.do_mask:
-            out[self.key], out.mask = self.mask_generator(out[self.key])
+            out[self.key+'_mask'], out.mask = self.mask_generator(out[self.key])
         return out
 
 

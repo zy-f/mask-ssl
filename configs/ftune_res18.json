@@ -1,0 +1,15 @@
+{
+    "exp_name": "ftune-res18_layer4_patch32",
+    "arch": "resnet18",
+    "weight_name": "res18_layer4_patch32-best",
+    "n_cls": 100,
+    "dl_kwargs": {
+        "num_workers": 8,
+        "batch_size": 256
+    },
+    "hparams": {
+        "n_epochs": 30,
+        "lr": 1e-3,
+        "wd": 5e-3
+    }
+}
