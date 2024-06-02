@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from easydict import EasyDict
 from tqdm import tqdm
+import sys
 from consts import WEIGHT_DIR
 import systems.a2mim_utils as a2u
 
@@ -70,7 +71,7 @@ class A2MIMSystem:
     
     def run_training(self):
         trn_dl = DataLoader(self.trn_dset, **self.cfg.dl_kwargs, shuffle=True)
-        val_dl = DataLoader(self.trn_dset, **self.cfg.dl_kwargs)
+        val_dl = DataLoader(self.val_dset, **self.cfg.dl_kwargs)
         log_out = EasyDict()
         log_out.best_loss = float('inf')
         n_epochs = self.cfg.hparams.n_epochs
@@ -81,7 +82,7 @@ class A2MIMSystem:
             for batch in tqdm(trn_dl, desc='trn', leave=True):
                 log_out.trn_loss += self.train_step(batch)
             log_out.trn_loss /= len(self.trn_dset)
-            for batch in tqdm(val_dl, desc='val'):
+            for batch in tqdm(val_dl, desc='val', leave=True):
                 log_out.val_loss += self.val_step(batch)
             log_out.val_loss /= len(self.val_dset)
 

@@ -1,0 +1,120 @@
+Please install scikit-image.
+Please install scikit-image with PyPi
+paramwise_options -- backbone.bn1.weight: weight_decay=0.0
+paramwise_options -- backbone.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer1.0.bn1.weight: weight_decay=0.0
+paramwise_options -- backbone.layer1.0.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer1.0.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer1.0.bn2.weight: weight_decay=0.0
+paramwise_options -- backbone.layer1.0.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer1.0.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer1.1.bn1.weight: weight_decay=0.0
+paramwise_options -- backbone.layer1.1.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer1.1.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer1.1.bn2.weight: weight_decay=0.0
+paramwise_options -- backbone.layer1.1.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer1.1.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer2.0.bn1.weight: weight_decay=0.0
+paramwise_options -- backbone.layer2.0.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer2.0.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer2.0.bn2.weight: weight_decay=0.0
+paramwise_options -- backbone.layer2.0.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer2.0.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer2.0.downsample.1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer2.1.bn1.weight: weight_decay=0.0
+paramwise_options -- backbone.layer2.1.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer2.1.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer2.1.bn2.weight: weight_decay=0.0
+paramwise_options -- backbone.layer2.1.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer2.1.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer3.0.bn1.weight: weight_decay=0.0
+paramwise_options -- backbone.layer3.0.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer3.0.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer3.0.bn2.weight: weight_decay=0.0
+paramwise_options -- backbone.layer3.0.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer3.0.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer3.0.downsample.1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer3.1.bn1.weight: weight_decay=0.0
+paramwise_options -- backbone.layer3.1.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer3.1.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer3.1.bn2.weight: weight_decay=0.0
+paramwise_options -- backbone.layer3.1.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer3.1.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer4.0.bn1.weight: weight_decay=0.0
+paramwise_options -- backbone.layer4.0.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer4.0.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer4.0.bn2.weight: weight_decay=0.0
+paramwise_options -- backbone.layer4.0.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer4.0.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer4.0.downsample.1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer4.1.bn1.weight: weight_decay=0.0
+paramwise_options -- backbone.layer4.1.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer4.1.bn1.bias: weight_decay=0.0
+paramwise_options -- backbone.layer4.1.bn2.weight: weight_decay=0.0
+paramwise_options -- backbone.layer4.1.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.layer4.1.bn2.bias: weight_decay=0.0
+paramwise_options -- backbone.fc.bias: weight_decay=0.0
+paramwise_options -- backbone.mim_mask.mask_token: weight_decay=0.0
+paramwise_options -- backbone.mim_mask.mask_token: lr=2.9999999999999997e-05
+paramwise_options -- decoder.decoder_pred.0.bias: weight_decay=0.0
+EPOCH 1/30
+trn_loss=0.00020552307184642325, val_loss=0.00020532110594213008
+EPOCH 2/30
+trn_loss=0.00011231411641033796, val_loss=8.820809777826071e-05
+EPOCH 3/30
+trn_loss=8.578821101154272e-05, val_loss=7.462713103741408e-05
+EPOCH 4/30
+trn_loss=0.00012245485455227587, val_loss=0.0001695471651852131
+EPOCH 5/30
+trn_loss=0.00011582325651453664, val_loss=0.00014725924525409937
+EPOCH 6/30
+trn_loss=0.00011110242106593572, val_loss=7.123756315559149e-05
+EPOCH 7/30
+trn_loss=0.00012377278584127242, val_loss=0.00011426611077040434
+EPOCH 8/30
+trn_loss=0.0001296342943293544, val_loss=0.0001538310991600156
+EPOCH 9/30
+trn_loss=0.00011077714572445704, val_loss=9.558020448312163e-05
+EPOCH 10/30
+trn_loss=0.000116576581605925, val_loss=0.0001571065053343773
+EPOCH 11/30
+trn_loss=0.00013429894572697008, val_loss=0.00011594624705612659
+EPOCH 12/30
+trn_loss=0.00014150742753408848, val_loss=0.00017462727762758732
+EPOCH 13/30
+trn_loss=0.00013835398226331633, val_loss=0.00015199879482388496
+EPOCH 14/30
+trn_loss=0.00013941587370175582, val_loss=0.00017229226063936949
+EPOCH 15/30
+trn_loss=0.000126155032002582, val_loss=0.0001299058973789215
+EPOCH 16/30
+trn_loss=0.00012131059674116282, val_loss=0.00013234181609004736
+EPOCH 17/30
+trn_loss=0.00010829187550653632, val_loss=0.00010228071212768555
+EPOCH 18/30
+trn_loss=9.239071326760145e-05, val_loss=0.00012408682219684124
+EPOCH 19/30
+trn_loss=0.00010536238285354697, val_loss=0.00015424719918519258
+EPOCH 20/30
+trn_loss=0.0001235319627269816, val_loss=0.00019095431305468083
+EPOCH 21/30
+trn_loss=0.00013008214809501973, val_loss=0.00015660896766930818
+EPOCH 22/30
+trn_loss=0.0001255898136430635, val_loss=0.0001767052136361599
+EPOCH 23/30
+trn_loss=0.0001306107133698578, val_loss=0.00012112627010792494
+EPOCH 24/30
+trn_loss=0.00013506409379725274, val_loss=0.18695274452716112
+EPOCH 25/30
+trn_loss=0.0001224401809919912, val_loss=0.0004577408865094185
+EPOCH 26/30
+trn_loss=0.00012735596587881446, val_loss=0.01877192513309419
+EPOCH 27/30
+trn_loss=0.00011999110364570068, val_loss=0.0035166420405730605
+EPOCH 28/30
+trn_loss=0.00012971263645360104, val_loss=0.0012424422277137637
+EPOCH 29/30
+trn_loss=0.00012148346429547438, val_loss=0.0003123564777895808
+EPOCH 30/30
+trn_loss=0.0001290968053114529, val_loss=0.0016764905400574208
