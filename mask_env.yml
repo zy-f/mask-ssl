@@ -39,4 +39,4 @@ dependencies:
   - pip:
     - imagenet-x
     - tensorboardX
-    - openmixup
+    #- openmixup
