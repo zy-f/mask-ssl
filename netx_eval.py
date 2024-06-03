@@ -61,7 +61,7 @@ class ImageNetXEvaluator:
                  subset_classes=None, map_classes=False):
         self.save_out = save_out
         dset = ImageNet('val', subset_classes=subset_classes)
-        self.class_map = dset.class_mapping if subset_classes and map_classes else None
+        self.subset_classes = subset_classes
         self.n_cls = len(subset_classes) if subset_classes and map_classes else 1000
         self.dl = DataLoader(dset, shuffle=False, **dl_config)
         self.device = device
@@ -94,8 +94,8 @@ class ImageNetXEvaluator:
                 pred_prob = out_probs[range(len(X)), pred_cls]
                 pred_cls = pred_cls.tolist()
                 preds['file_name'] += list(map(self._fix_image_paths, batch.path))
-                if self.class_map:
-                    pred_cls = [self.class_map[y] for y in pred_cls]
+                if self.subset_classes:
+                    pred_cls = [self.subset_classes[y] for y in pred_cls]
                 preds['predicted_class'] += pred_cls
                 preds['predicted_probability'] += pred_prob.tolist()
         df = pd.DataFrame(preds)
