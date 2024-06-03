@@ -70,15 +70,15 @@ class ImageNetXEvaluator:
         self.out_dir = out_dir
         self.out_files = []
         # self.file_ix = pd.read_csv(get_annotation_path() / "filename_label.csv").values[:,0]
-    
+
     def __del__(self):
         if not self.save_out:
             for f in self.out_files:
                 os.remove(f)
-    
+
     def _fix_image_paths(self, fp):
         return fp[:fp.rfind('_')] + fp[fp.rfind('.'):]
-    
+
     # def _reorder(self, df):
     #     return df.set_index('file_name').loc[self.file_ix].reset_index()
 
@@ -101,6 +101,7 @@ class ImageNetXEvaluator:
                 preds['predicted_class'] += pred_cls
                 preds['predicted_probability'] += pred_prob.tolist()
         df = pd.DataFrame(preds)
+        print(df.head())
         # df = self._reorder(df)
         out_path = f"{self.out_dir}/{run_name}.csv"
         df.to_csv(out_path, header=True, index=False)
