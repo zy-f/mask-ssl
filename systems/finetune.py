@@ -8,6 +8,10 @@ from easydict import EasyDict
 from consts import WEIGHT_DIR
 from utils import ScalarMetric, LogOutput, LogInput, EpochLogger
 
+def load_weights(model, weight_name, delete_keys=[]):
+    sd = torch.load(f"{WEIGHT_DIR}/{weight_name}.pth", map_location='cpu')
+    print(model.load_state_dict(sd, strict=False))
+
 class GenericFinetuneSystem:
     def __init__(self, cfg, model, trn_dset, val_dset, tst_dset, device='cpu'):
         self.model = model

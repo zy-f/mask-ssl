@@ -9,8 +9,7 @@ import systems.finetune as ftune
 
 def load_model(arch, weight_name, n_cls=100):
     model = ARCHITECTURES[arch](num_classes=n_cls)
-    sd = torch.load(f"{WEIGHT_DIR}/{weight_name}.pth", map_location='cpu')
-    print(model.load_state_dict(sd, strict=False))
+    ftune.load_weights(model, weight_name=weight_name)
     return model
 
 def main(cfg):
