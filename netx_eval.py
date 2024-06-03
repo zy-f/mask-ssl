@@ -1,3 +1,4 @@
+import argparse
 import os
 import torch
 from torch.nn.functional import softmax
@@ -37,7 +38,7 @@ def _load_model_predictions(models_dir, verbose=False):
         if not path.endswith(".csv"):
             continue
         df = pd.read_csv(os.path.join(models_dir, path)).set_index("file_name")
-        model = path[:path.find('_')]
+        model = path[:path.find('.')] #path[:path.find('_')]
         _labels = labels.loc[df.index]
         top_1_accs[model] = (df["predicted_class"] == _labels).mean()
         models[model] = df
@@ -50,8 +51,9 @@ def _get_factor_accuracies(models_dir, which_factor='top', error_type='class'):
         "class": "is_correct",
     }[error_type]
     annotations = load_annotations(which_factor=which_factor, partition='val', filter_prototypes=True)
-    model_predictions = _load_model_predictions(models_dir)
-    aug_predictions = augment_model_predictions(annotations, model_predictions[0])
+    models, top_1_accs = _load_model_predictions(models_dir)
+    print(top_1_accs)
+    aug_predictions = augment_model_predictions(annotations, models)
     return compute_factor_accuracies(aug_predictions, FACTORS, error_type=error_type)
 
 ###
@@ -115,12 +117,21 @@ def analyze_all(display=True, savename=None):
         error_ratios.to_csv(base+'err_ratios.csv')
         plots.model_comparison(factor_accs.reset_index(), fname=base+"model_comp.png")
 
-def main():
-    analyzer = ImageNetXEvaluator(subset_classes=CLASS_SUBSET_100, device='cuda')
-    analyzer.run_eval('a2mim')
-    analyzer.run_eval('moco_v3')
-    # breakpoint()
-    analyze_all(savename='baseline_100')
+def main(system='ftune', weight='', arch='resnet50', evaluate=False, compare=False, plotname='gen'):
+    if evaluate:
+        print(f'>>> sys={system}, arch={arch}, weight_name={weight} <<<')
+        analyzer = ImageNetXEvaluator(subset_classes=CLASS_SUBSET_100, device='cuda', map_classes=True)
+        analyzer.run_eval(system, arch=arch, weight_name=weight)
+    if compare:
+        analyze_all(savename=plotname)
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description='evaluate models on imagenet-x')
+    parser.add_argument('-c', '--compare', action='store_true')
+    parser.add_argument('-n', '--plotname', type=str, help='filename for plot', default='gen')
+    parser.add_argument('-e', '--evaluate', action='store_true')
+    parser.add_argument('-s', '--system', type=str, help='name of system to use', default='ftune')
+    parser.add_argument('-w', '--weight', type=str, help='name of weight to load')
+    parser.add_argument('-a', '--arch', type=str, help='name of architecture to load', default='resnet50')
+    args = parser.parse_args()
+    main(**args.__dict__)
