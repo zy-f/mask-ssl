@@ -4,7 +4,7 @@
     "mask_cfg": {},
     "mask_gen_cfg": {
         "mask_patch_size": 4,
-        "mask_ratio": 0.6,
+        "mask_ratio": 0.8,
         "mask_color": "mean"
     },
     "mask_layer": 2,
