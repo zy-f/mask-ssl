@@ -62,6 +62,7 @@ class ImageNetXEvaluator:
         self.save_out = save_out
         dset = ImageNet('val', subset_classes=subset_classes)
         self.class_map = dset.class_mapping if subset_classes and map_classes else None
+        self.n_cls = len(subset_classes) if subset_classes and map_classes else 1000
         self.dl = DataLoader(dset, shuffle=False, **dl_config)
         self.device = device
         self.out_dir = out_dir
@@ -81,7 +82,7 @@ class ImageNetXEvaluator:
 
     def run_eval(self, ssl_system, arch='resnet50', weight_name='', run_name=None):
         run_name = run_name or f"{ssl_system}_{arch}_{weight_name}"
-        model = ARCHITECTURES[arch]().to(self.device)
+        model = ARCHITECTURES[arch](num_classes=self.n_cls).to(self.device)
         SYSTEMS[ssl_system].load_weights(model, weight_name=(weight_name or arch))
         preds = {'file_name': [], 'predicted_class': [], 'predicted_probability': []}
         with torch.no_grad():
