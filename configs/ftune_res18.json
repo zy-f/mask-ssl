@@ -8,7 +8,7 @@
         "batch_size": 256
     },
     "hparams": {
-        "n_epochs": 20,
+        "n_epochs": 40,
         "lr": 1e-3,
         "wd": 5e-3
     }
