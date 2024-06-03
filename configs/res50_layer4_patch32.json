@@ -1,5 +1,5 @@
 {
-    "exp_name": "res50_layer2_patch4",
+    "exp_name": "res50_layer4_patch32",
     "arch": "resnet50",
     "mask_cfg": {},
     "mask_gen_cfg": {
