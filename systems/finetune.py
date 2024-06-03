@@ -102,8 +102,8 @@ class GenericFinetuneSystem:
                 self.epoch_logger.add_batch(batch_out)
             epoch_data = self.epoch_logger.flush()
             new_best = self.log_outputs.update(epoch_data)
+            print(self.log_outputs.report())
             if new_best:
                 print('new best achieved, saving')
                 self.save_model()
-            print(self.log_outputs.report())
-        self.log_outputs.write_out(savename=self.cfg.exp_name)
+            self.log_outputs.write_out(savename=self.cfg.exp_name)
