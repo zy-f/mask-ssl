@@ -1,0 +1,18 @@
+{
+    "exp_name": "NULL",
+    "arch": "resnet50",
+    "mask_cfg": {},
+    "mask_gen_cfg": {
+        "mask_patch_size": -1.0,
+        "mask_ratio": -1.0,
+        "mask_color": "mean"
+    },
+    "mask_layer": -1,
+    "dl_kwargs": {
+        "num_workers": 8,
+        "batch_size": 128
+    },
+    "hparams": {
+        "n_epochs": 20
+    }
+}

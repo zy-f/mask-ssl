@@ -107,6 +107,10 @@ class ImageNetXEvaluator:
         df.to_csv(out_path, header=True, index=False)
         self.out_files.append(out_path)
 
+def scatter_factor_accs(df, fname=''):
+    fig, axes = plt.subplots()
+
+
 def analyze_all(display=True, savename=None):
     factor_accs = _get_factor_accuracies(PRED_DIR) # df
     error_ratios = error_ratio(factor_accs) # df
@@ -115,7 +119,15 @@ def analyze_all(display=True, savename=None):
         plots.model_comparison(factor_accs.reset_index())
     if savename:
         base = f"{OUTPUT_DIR}/{savename}-"
+        print('saving plots and tables')
+        factor_accs.to_csv(base+'factor_accs.csv')
         error_ratios.to_csv(base+'err_ratios.csv')
+        plots.factor_scatterplot(factor_accs, 
+                            id_vars=['model', 'Accuracy'],
+                            var_name='Factor',
+                            value_name='Accuracy (Factor)',
+                            x='Accuracy',
+                            fname=base+"factor_acc_comp.png")
         plots.model_comparison(factor_accs.reset_index(), fname=base+"model_comp.png")
 
 def main(system='ftune', weight='', arch='resnet50', evaluate=False, compare=False, plotname='gen'):
