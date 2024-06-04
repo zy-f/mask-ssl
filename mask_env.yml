@@ -13,7 +13,7 @@ dependencies:
   - pandas
     # visualization
   - matplotlib
-  - seaborn
+  - seaborn=0.12
   - plotly
     # nice-to-haves
   - tqdm
