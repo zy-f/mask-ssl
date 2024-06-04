@@ -86,7 +86,7 @@ class A2MIMSystem:
         return EasyDict(val_loss=loss.item())
 
     def save_model(self):
-        torch.save(self.full_model.backbone.state_dict(), f'{WEIGHT_DIR}/{self.cfg.exp_name}-best.pth')
+        torch.save(self.full_model.state_dict(), f'{WEIGHT_DIR}/{self.cfg.exp_name}_full-best.pth')
     
     def run_training(self):
         trn_dl = DataLoader(self.trn_dset, **self.cfg.dl_kwargs, shuffle=True)
