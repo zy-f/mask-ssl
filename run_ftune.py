@@ -6,10 +6,11 @@ from dsets.imagenet import ImageNet, TRAIN_TRANSFORM
 from consts import SEED, CLASS_SUBSET_100, WEIGHT_DIR
 from utils import load_config, seed_all
 import systems.finetune as ftune
+import systems.a2mim as a2
 
 def load_model(arch, weight_name, n_cls=100):
     model = ARCHITECTURES[arch](num_classes=n_cls)
-    ftune.load_weights(model, weight_name=weight_name)
+    a2.load_weights(model, weight_name=weight_name)
     return model
 
 def main(cfg):

@@ -20,7 +20,11 @@ def load_weights(model, weight_name='resnet50', delete_keys=[]):
         sd = {k[k.find('.')+1:] : v for k,v in raw_ckpt['state_dict'].items()}
         for dk in delete_keys:
             del sd[dk]
-        print(model.load_state_dict(sd, strict=False))
+    else:
+        raw_ckpt = torch.load(f"{WEIGHT_DIR}/{weight_name}.pth", map_location='cpu')
+        sd = {k[len("backbone."):] : v for k,v in raw_ckpt.items()
+              if k.startswith('backbone.')}
+    print(model.load_state_dict(sd, strict=False))
 
 class A2MIMSystem:
     """
