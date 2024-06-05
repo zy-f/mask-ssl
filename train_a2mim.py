@@ -27,5 +27,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     cfg = load_config(args.config)
     if not cfg.get('exp_name'):
-        cfg.exp_name = 'ftune_'+cfg.weight_name
+        cfg.exp_name = 'a2mim_'+cfg.weight_name
     main(cfg)
