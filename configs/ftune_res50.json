@@ -1,15 +1,15 @@
 {
-    "exp_name": "ftune-res50_layer4_patch32",
+    "exp_name": "",
     "arch": "resnet50",
-    "weight_name": "res50_layer4_patch32-best",
+    "weight_name": "",
     "n_cls": 100,
     "dl_kwargs": {
         "num_workers": 8,
         "batch_size": 256
     },
     "hparams": {
-        "n_epochs": 40,
+        "n_epochs": 15,
         "lr": 1e-3,
-        "wd": 5e-3
+        "wd": 5e-2
     }
 }
