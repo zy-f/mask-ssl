@@ -21,7 +21,7 @@ SWEEP_FTUNE = [
     # [4, 32, 0.8], # not interesting/no time
     # [4, 32, 0.4], # no time/never run
     [3, 56, 0.4], # running
-    [2, 4, 0.8] # moved over from other instance
+    [2, 4, 0.8], # moved over from other instance
     [3, 56, 0.6], # running
     # [3, 56, 0.8], # no time
 ]
