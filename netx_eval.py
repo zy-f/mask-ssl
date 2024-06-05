@@ -5,15 +5,19 @@ from torch.nn.functional import softmax
 from torch.utils.data import DataLoader
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 from tqdm import tqdm
 from imagenet_x import error_ratio, plots, compute_factor_accuracies
 from imagenet_x.utils import get_annotation_path, load_annotations, \
                              augment_model_predictions, FACTORS
 
 from dsets.imagenet import ImageNet
+
 from systems import SYSTEMS
 from models import ARCHITECTURES
 from consts import OUTPUT_DIR, CLASS_SUBSET_100
+from utils import get_rect_subplots
 
 DL_CONFIG = {
     'batch_size': 128,
@@ -54,7 +58,10 @@ def _get_factor_accuracies(models_dir, which_factor='top', error_type='class'):
     models, top_1_accs = _load_model_predictions(models_dir)
     print(top_1_accs)
     aug_predictions = augment_model_predictions(annotations, models)
-    return compute_factor_accuracies(aug_predictions, FACTORS, error_type=error_type)
+    factor_accs = compute_factor_accuracies(aug_predictions, FACTORS, error_type=error_type)
+    factor_accs['val_acc'] = top_1_accs
+    print(factor_accs.head(2))
+    return factor_accs
 
 ###
 
@@ -107,12 +114,34 @@ class ImageNetXEvaluator:
         df.to_csv(out_path, header=True, index=False)
         self.out_files.append(out_path)
 
-def scatter_factor_accs(df, fname=''):
-    fig, axes = plt.subplots()
+def plot_factor_accs(factor_df, fname='', display=False, eps=0.01,
+                     cols=["pattern", "partial_view", "texture", "object_blocking", "person_blocking", "val_acc"]):
+    factor_df = factor_df.add(eps)
+    melted = factor_df[cols].reset_index().melt(id_vars='model', var_name='factor', value_name='accuracy')
+    plt.figure(figsize=(20, 3))
+    factor_plot = sns.barplot(melted, x='factor', y='accuracy', hue='model')
+    plt.xlabel("")
+    plt.ylabel('accuracy', fontsize=18)
+    plt.ylim(0,1)
+    sns.despine()
+    sns.move_legend(
+        factor_plot,
+        "lower left",
+        bbox_to_anchor=(0.01, 0.78),
+        ncol=len(factor_df)//2,
+        title=None,
+        frameon=False,
+    )
+    plt.tight_layout()
+    plt.gca().set_axisbelow(True)
+    plt.grid(axis="y", which="major", linewidth=1, alpha=0.3, linestyle="--")
+    if display:
+        plt.show()
+    if fname:
+        plt.savefig(fname)
 
-
-def analyze_all(display=True, savename=None):
-    factor_accs = _get_factor_accuracies(PRED_DIR) # df
+def analyze_all(data_dir=PRED_DIR, display=True, savename=None):
+    factor_accs = _get_factor_accuracies(data_dir) # df
     error_ratios = error_ratio(factor_accs) # df
     if display:
         print(error_ratios)
@@ -122,13 +151,8 @@ def analyze_all(display=True, savename=None):
         print('saving plots and tables')
         factor_accs.to_csv(base+'factor_accs.csv')
         error_ratios.to_csv(base+'err_ratios.csv')
-        plots.factor_scatterplot(factor_accs, 
-                            id_vars=['model', 'Accuracy'],
-                            var_name='Factor',
-                            value_name='Accuracy (Factor)',
-                            x='Accuracy',
-                            fname=base+"factor_acc_comp.png")
-        plots.model_comparison(factor_accs.reset_index(), fname=base+"model_comp.png")
+        plot_factor_accs(factor_accs, fname=base+"factor_acc_comp.png")
+        # plots.model_comparison(factor_accs.reset_index(), fname=base+"model_comp.png")
 
 def main(system='ftune', weight='', arch='resnet50', evaluate=False, compare=False, plotname='gen'):
     if evaluate:
@@ -136,7 +160,7 @@ def main(system='ftune', weight='', arch='resnet50', evaluate=False, compare=Fal
         analyzer = ImageNetXEvaluator(subset_classes=CLASS_SUBSET_100, device='cuda', map_classes=True)
         analyzer.run_eval(system, arch=arch, weight_name=weight)
     if compare:
-        analyze_all(savename=plotname)
+        analyze_all(savename=plotname, data_dir=f'{OUTPUT_DIR}/old-netx_preds')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='evaluate models on imagenet-x')
