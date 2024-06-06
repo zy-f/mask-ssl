@@ -8,16 +8,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
-from imagenet_x import error_ratio, plots, compute_factor_accuracies
+from imagenet_x import plots, compute_factor_accuracies
 from imagenet_x.utils import get_annotation_path, load_annotations, \
                              augment_model_predictions, FACTORS
-
 from dsets.imagenet import ImageNet
 
 from systems import SYSTEMS
 from models import ARCHITECTURES
 from consts import OUTPUT_DIR, CLASS_SUBSET_100
-from utils import get_rect_subplots
+FACTOR_SUBSET = ['background', 'color', 'smaller', 'partial_view', 'pattern', 
+                 'pose', 'shape', 'subcategory','texture']
 
 DL_CONFIG = {
     'batch_size': 128,
@@ -58,10 +58,35 @@ def _get_factor_accuracies(models_dir, which_factor='top', error_type='class'):
     models, top_1_accs = _load_model_predictions(models_dir)
     print(top_1_accs)
     aug_predictions = augment_model_predictions(annotations, models)
-    factor_accs = compute_factor_accuracies(aug_predictions, FACTORS, error_type=error_type)
+    factor_accs = compute_factor_accuracies(aug_predictions, FACTOR_SUBSET, error_type=error_type)
     factor_accs['val_acc'] = top_1_accs
     print(factor_accs.head(2))
     return factor_accs
+
+def _plot_error_ratios(comparison_df, factors=FACTOR_SUBSET, average_name='average', hue='model', fname=None):
+    value = "Error ratio"
+    comparison_df = comparison_df[factors + [hue, average_name]].melt(
+        id_vars=[hue, average_name], var_name="Factor", value_name="Accuracy"
+    )
+    comparison_df["Error ratio"] = (1-comparison_df["Accuracy"]) / (1-comparison_df[average_name])
+    comparison_df = comparison_df.sort_values(by=value)
+    factor_order = (
+        comparison_df.groupby("Factor")["Error ratio"].mean().sort_values().index.values
+    )
+    data_to_display = comparison_df.groupby(["Factor", hue]).mean().reset_index()
+    g = plots.plot_bar_plot(data_to_display, x="Factor", y=value, hue=hue, factor_order=factor_order)
+    sns.move_legend(
+        g,
+        "lower center",
+        bbox_to_anchor=(0.5, -1),
+        ncol=len(comparison_df[hue].unique())//2,
+        title=None,
+        frameon=False,
+    )
+    plt.xticks(rotation=0)
+    if fname is not None:
+        plt.savefig(fname, bbox_inches="tight", dpi=300, transparent=False)
+        plt.close()
 
 ###
 
@@ -114,8 +139,8 @@ class ImageNetXEvaluator:
         df.to_csv(out_path, header=True, index=False)
         self.out_files.append(out_path)
 
-def plot_factor_accs(factor_df, fname='', display=False, eps=0.01,
-                     cols=["pattern", "partial_view", "texture", "object_blocking", "person_blocking", "val_acc"]):
+def _plot_factor_accs(factor_df, fname='', display=False, eps=0.01,
+                     cols=["val_acc", "texture", "subcategory", "partial_view"]):
     factor_df = factor_df.add(eps)
     melted = factor_df[cols].reset_index().melt(id_vars='model', var_name='factor', value_name='accuracy')
     plt.figure(figsize=(20, 3))
@@ -140,9 +165,9 @@ def plot_factor_accs(factor_df, fname='', display=False, eps=0.01,
     if fname:
         plt.savefig(fname)
 
-def analyze_all(data_dir=PRED_DIR, display=True, savename=None):
+def analyze_all(data_dir=PRED_DIR, display=False, savename=None):
     factor_accs = _get_factor_accuracies(data_dir) # df
-    error_ratios = error_ratio(factor_accs) # df
+    error_ratios = (1-factor_accs[FACTOR_SUBSET]).divide((1-factor_accs["average"]), axis=0) # df
     if display:
         print(error_ratios)
         plots.model_comparison(factor_accs.reset_index())
@@ -151,21 +176,22 @@ def analyze_all(data_dir=PRED_DIR, display=True, savename=None):
         print('saving plots and tables')
         factor_accs.to_csv(base+'factor_accs.csv')
         error_ratios.to_csv(base+'err_ratios.csv')
-        plot_factor_accs(factor_accs, fname=base+"factor_acc_comp.png")
-        # plots.model_comparison(factor_accs.reset_index(), fname=base+"model_comp.png")
+        _plot_factor_accs(factor_accs, fname=base+"factor_acc_comp.png")
+        _plot_error_ratios(factor_accs.reset_index(), fname=base+"model_comp.png")
 
 def main(system='ftune', weight='', arch='resnet50', evaluate=False, compare=False, plotname='gen'):
     if evaluate:
         print(f'>>> sys={system}, arch={arch}, weight_name={weight} <<<')
         analyzer = ImageNetXEvaluator(subset_classes=CLASS_SUBSET_100, device='cuda', map_classes=True)
-        analyzer.run_eval(system, arch=arch, weight_name=weight)
+        analyzer.run_eval(system, arch=arch, weight_name=weight,
+                            run_name=weight[:-len('-best')])
     if compare:
-        analyze_all(savename=plotname, data_dir=f'{OUTPUT_DIR}/old-netx_preds')
+        analyze_all(savename=plotname, data_dir=f'{OUTPUT_DIR}/netx_preds')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='evaluate models on imagenet-x')
     parser.add_argument('-c', '--compare', action='store_true')
-    parser.add_argument('-n', '--plotname', type=str, help='filename for plot', default='gen')
+    parser.add_argument('-n', '--plotname', type=str, help='filename for plot', default='final')
     parser.add_argument('-e', '--evaluate', action='store_true')
     parser.add_argument('-s', '--system', type=str, help='name of system to use', default='ftune')
     parser.add_argument('-w', '--weight', type=str, help='name of weight to load')

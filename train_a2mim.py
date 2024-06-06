@@ -7,7 +7,6 @@ from utils import load_config, seed_all
 
 def main(cfg):
     seed_all(SEED)
-    cfg.mask_gen_cfg.seed = SEED
     model = ARCHITECTURES[cfg.arch](num_classes=100)
     # del model.fc
     # del model.avgpool
@@ -16,7 +15,8 @@ def main(cfg):
         model=model,
         trn_dset=ImageNet('train', subset_classes=CLASS_SUBSET_100, transform=TRAIN_TRANSFORM),
         val_dset=ImageNet('val', subset_classes=CLASS_SUBSET_100),
-        device='cuda'
+        device='cuda',
+        seed=SEED
     )
     sys.run_training()
 
