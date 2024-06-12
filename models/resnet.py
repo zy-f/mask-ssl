@@ -1,4 +1,4 @@
-# barebones resnet adapted from torchvision repo
+# barebones resnet, largely borrowed/adapted from torchvision repo
 from functools import partial
 from typing import Any, Callable, List, Optional, Type, Union
 

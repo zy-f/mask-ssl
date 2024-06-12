@@ -7,6 +7,8 @@ from openmixup.models import builder as om_builder
 from openmixup.core.optimizers import builder as oo_builder
 
 ## modifications to the resnet
+
+# adapted with simplification from existing openmixup implementation
 class ResNetMIMMask(nn.Module):
     def __init__(self,
                  mask_mode='learnable',
@@ -95,6 +97,8 @@ def inject_multi_mask(net, mask_cfg=[]):
     return net
 
 ## modifications to imagenet
+
+# adapted with simplification/debug from existing openmixup implementation
 class BlockwiseMaskGenerator(object):
     """Generate random block for the image.
 
@@ -209,6 +213,7 @@ class MultiMaskedDataset(Dataset):
         return out_batch
 
 ## ADDING DECODER (wrapper)
+# config taken from openmixup
 NECK_CFG = dict(
     type='NonLinearMIMNeck',
     decoder_cfg=None,
@@ -236,6 +241,7 @@ class A2MIMModel(nn.Module):
 
 
 ## LOSS (wrapper)
+# config taken from openmixup
 HEAD_CFG = dict(
     type='A2MIMHead',
     loss=dict(type='RegressionLoss', mode='focal_l1_loss',
@@ -258,6 +264,7 @@ class A2MIMLoss(nn.Module):
         return self.head(img, img_rec, mask)['loss']
 
 ## optimizer wrapper
+# mostly taken from openmixup
 def prepare_optimizer(model, hparams=None):
     opt_cfg = dict(
         type='AdamW',

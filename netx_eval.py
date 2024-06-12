@@ -26,7 +26,7 @@ DL_CONFIG = {
 }
 PRED_DIR = f'{OUTPUT_DIR}/netx_preds'
 
-### ADAPTED CODE FROM IMAGENET-X
+### ADAPTED CODE FROM IMAGENET-X REPO
 def _load_model_predictions(models_dir, verbose=False):
     filename_label = pd.read_csv(get_annotation_path() / "filename_label.csv")
     _, labels = (
@@ -87,8 +87,7 @@ def _plot_error_ratios(comparison_df, factors=FACTOR_SUBSET, average_name='avera
     if fname is not None:
         plt.savefig(fname, bbox_inches="tight", dpi=300, transparent=False)
         plt.close()
-
-###
+### END ADAPTED CODE
 
 class ImageNetXEvaluator:
     def __init__(self, out_dir=PRED_DIR, save_out=True, dl_config=DL_CONFIG, device='cpu', \
