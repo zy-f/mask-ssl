@@ -6,7 +6,7 @@ LOG_DIR = f"{PROJ_DIR}/exp_logs"
 
 SEED = 3
 RESNET_INP_DIM = 224
-## subset taken from https://www.kaggle.com/datasets/ambityga/imagenet100
+## class subset taken from https://www.kaggle.com/datasets/ambityga/imagenet100
 CLASS_SUBSET_100 = [
     117, 70, 88, 133, 5, 97, 42, 60, 14, 3,
     130, 57, 26, 0, 89, 127, 36, 67, 110, 65,

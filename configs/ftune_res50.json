@@ -1,7 +1,7 @@
 {
-    "exp_name": "",
+    "exp_name": "ftune-mixed_mask_l2l4",
     "arch": "resnet50",
-    "weight_name": "",
+    "weight_name": "mixed_mask_l2l4_full-best",
     "n_cls": 100,
     "dl_kwargs": {
         "num_workers": 8,

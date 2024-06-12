@@ -7,6 +7,8 @@ from openmixup.models import builder as om_builder
 from openmixup.core.optimizers import builder as oo_builder
 
 ## modifications to the resnet
+
+# adapted with simplification from existing openmixup implementation
 class ResNetMIMMask(nn.Module):
     def __init__(self,
                  mask_mode='learnable',
@@ -76,7 +78,27 @@ def inject_mask(net, mask_cfg={}, layer=4):
     net.forward = MethodType(modified_forward, net)
     return net
 
+def inject_multi_mask(net, mask_cfg=[]):
+    for m_layer, cfg in mask_cfg:
+        mask_dims = get_resnet_layer_input_dim(net, m_layer)
+        net.add_module(f'mim_mask{m_layer}', ResNetMIMMask(mask_dims=mask_dims, **cfg))
+    def modified_forward(self, x, mask=None, layer=None):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        for i in range(1,5):
+            if i == layer and self.training: # disable masking in eval mode
+                getattr(self, f'mim_mask{i}')(x, mask=mask)
+            x = getattr(self, f'layer{i}')(x)
+        return x
+    net.forward = MethodType(modified_forward, net)
+    return net
+
 ## modifications to imagenet
+
+# adapted with simplification/debug from existing openmixup implementation
 class BlockwiseMaskGenerator(object):
     """Generate random block for the image.
 
@@ -132,9 +154,10 @@ class BlockwiseMaskGenerator(object):
         return img, mask
 
 class MaskedDataset(Dataset):
-    def __init__(self, base_dataset, mask_gen_cfg={}, mask_layer=4, input_name='x'):
+    def __init__(self, base_dataset, mask_gen_cfg={}, mask_layer=4, input_name='x', seed=None):
         self.base_dataset = base_dataset
         mask_gen_cfg['model_patch_size'] = 2**mask_layer
+        mask_gen_cfg['seed'] = seed
         self.mask_generator = BlockwiseMaskGenerator(**mask_gen_cfg)
         self.do_mask = True
         self.key = input_name
@@ -153,9 +176,44 @@ class MaskedDataset(Dataset):
         if self.do_mask:
             out[self.key+'_mask'], out.mask = self.mask_generator(out[self.key])
         return out
+    
+class MultiMaskedDataset(Dataset):
+    def __init__(self, base_dataset, mask_gen_cfg=[], input_name='x', seed=None):
+        self.base_dataset = base_dataset
+        self.mask_layers = []
+        self.mask_generators = []
+        for mask_layer, cfg in mask_gen_cfg:
+            cfg['model_patch_size'] = 2**mask_layer
+            self.mask_layers.append(mask_layer)
+            self.mask_generators.append(BlockwiseMaskGenerator(**cfg, seed=seed))
+        self.do_mask = True
+        self.key = input_name
+        self.rng = np.random.default_rng(seed)
 
+    def enable_mask(self, enable=True):
+        self.do_mask = enable
+    
+    def disable_mask(self):
+        self.enable_mask(enable=False)
+    
+    def __len__(self):
+        return len(self.base_dataset)
+    
+    def __getitem__(self, indices): # must requet entire batch at once
+        mask_idx = self.rng.integers(len(self.mask_layers))
+        batch = []
+        for i in indices:
+            out = self.base_dataset[i]
+            if self.do_mask:
+                # select a random mask to apply    
+                out[self.key+'_mask'], out.mask = self.mask_generators[mask_idx](out[self.key])
+            batch.append(out)
+        out_batch = torch.utils.data.default_collate(batch)
+        out_batch.layer = self.mask_layers[mask_idx]
+        return out_batch
 
 ## ADDING DECODER (wrapper)
+# config taken from openmixup
 NECK_CFG = dict(
     type='NonLinearMIMNeck',
     decoder_cfg=None,
@@ -174,12 +232,16 @@ class A2MIMModel(nn.Module):
         self.decoder = om_builder.build_neck(cfg)
         self.decoder.init_weights()
 
-    def forward(self, x, mask=None):
-        x = self.backbone(x, mask=mask)
+    def forward(self, x, mask=None, layer=None):
+        if layer is None:
+            x = self.backbone(x, mask=mask)
+        else:
+            x = self.backbone(x, mask=mask, layer=layer)
         return self.decoder([x])[0]
 
 
 ## LOSS (wrapper)
+# config taken from openmixup
 HEAD_CFG = dict(
     type='A2MIMHead',
     loss=dict(type='RegressionLoss', mode='focal_l1_loss',
@@ -202,6 +264,7 @@ class A2MIMLoss(nn.Module):
         return self.head(img, img_rec, mask)['loss']
 
 ## optimizer wrapper
+# mostly taken from openmixup
 def prepare_optimizer(model, hparams=None):
     opt_cfg = dict(
         type='AdamW',
